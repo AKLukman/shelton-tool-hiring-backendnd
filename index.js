@@ -8,7 +8,7 @@ import {
 
 const app = express();
 app.use(cors());
-const port = 6000;
+const port = 6868;
 // const nodeEnv = process.env.MONGO_URI; 
 
 app.use(express.json());
