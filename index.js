@@ -1,4 +1,5 @@
 import cors from 'cors';
+import dotenv from 'dotenv';
 import express from 'express';
 import {
   MongoClient,
@@ -6,19 +7,14 @@ import {
   ServerApiVersion,
 } from 'mongodb';
 
+dotenv.config();
 const app = express();
 app.use(cors());
 const port = 6868;
-// const nodeEnv = process.env.MONGO_URI; 
-
+const nodeEnv = process.env.MONGO_URI;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Connection with mongodb 
-// const mongoUri = process.env.MONGO_URI;
-
-const uri = "mongodb+srv://sheltonTool:IxjzLCkNyd1uQeTP@cluster0.qffvse5.mongodb.net/?retryWrites=true&w=majority";
-
+const uri = nodeEnv;
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
