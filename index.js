@@ -105,37 +105,29 @@ app.get("/categorized-products", async (req, res) => {
 
 // Products for specific category.....
 app.get("/get-products", async (req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-
-  const PAGE_SIZE = 20;
-  let page = parseInt(req.query.page) || 1;
-  let skip = (page - 1) * PAGE_SIZE;
-
-  try {
-    let category = '';
-    if (req.query.category) {
-      const categoryArray = JSON.parse(req.query.category);
-      if (Array.isArray(categoryArray) && categoryArray.length > 0) {
-        category = categoryArray[0].category || '';
-      }
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  
+    const PAGE_SIZE = 20;
+    let page = parseInt(req.query.page) || 1;
+    let skip = (page - 1) * PAGE_SIZE;
+  
+    try {
+      let category = req.query.category;
+      const query = category ? { category: category } : {}; // Update query structure here
+      const result = await userCollection
+        .find(query)
+        .skip(skip)
+        .limit(PAGE_SIZE)
+        .toArray();
+      res.status(200).send(result); // Use status().send() instead of res.send() with status code
+    } catch (error) {
+      console.log(error);
+      res.status(500).send("Error fetching products"); // Sending an error message with status code
     }
-
-    const query = category ? { category: { $elemMatch: { category: category } } } : {};
-
-    const result = await userCollection
-      .find(query)
-      .skip(skip)
-      .limit(PAGE_SIZE)
-      .toArray();
-
-    res.send(result);
-  } catch (error) {
-    console.log(error);
-    res.status(500).send("Error fetching products", error);
-  }z
-});
+  });
+  
 
 
 
@@ -258,6 +250,74 @@ app.put("/edit-product/:productId", async (req, res) => {
     res.status(500).send({ error: 'Failed to update your product.' });
   }
 });
+
+function getCurrentDateTime() {
+  const currentDate = new Date(); 
+  return currentDate.toLocaleString();
+}
+// Comment for a particular product....
+app.post("/add-comment/:toolId", async (req, res) => {
+  function generateFiveDigitNumber() {
+    const min = 10000;
+    const max = 99999;
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  try {
+    const userId = generateFiveDigitNumber();
+    const commentTime = getCurrentDateTime();
+    const { toolId } = req.params;
+    const commentAndRating = req.body;
+    console.log(commentAndRating);
+    const tool = await userCollection.findOneAndUpdate(
+      { _id: new ObjectId(toolId) },
+      { $push: { comments: { userId: userId, commentAndRating, timeOfComment: commentTime, reviews: [] } } },
+      { returnOriginal: false }
+    );
+
+    if (!tool) {
+      return res.status(404).json({ message: "Tool not found" });
+    }
+    res.send(tool);
+    // res.status(201).json(tool.value);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+
+// Review for a particular comment
+app.post("/add-review/:toolId", async (req, res) => {
+  try {
+    const { toolId } = req.params;
+    const { repliedCommentId, reviewerName, reviewerComment } = req.body;
+    const reviewTime = getCurrentDateTime();
+    const tool = await userCollection.findOneAndUpdate(
+      { 
+        _id: new ObjectId(toolId),
+        "comments.userId": repliedCommentId
+      },
+      { 
+        $push: { 
+          "comments.$.reviews": { repliedCommentId, reviewerName,reviewerComment,  reviewTime } // Update the matched comment
+        }
+      },
+      { returnOriginal: false }
+    );
+
+    if (!tool) {
+      return res.status(404).json({ message: "Tool or comment not found" });
+    }
+    res.send(tool);
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+
+
+
 
 
 app.listen(port, () => {
