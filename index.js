@@ -123,7 +123,6 @@ app.get("/get-products", async (req, res) => {
         .toArray();
       res.status(200).send(result); // Use status().send() instead of res.send() with status code
     } catch (error) {
-      console.log(error);
       res.status(500).send("Error fetching products"); // Sending an error message with status code
     }
   });
@@ -268,7 +267,6 @@ app.post("/add-comment/:toolId", async (req, res) => {
     const commentTime = getCurrentDateTime();
     const { toolId } = req.params;
     const commentAndRating = req.body;
-    console.log(commentAndRating);
     const tool = await userCollection.findOneAndUpdate(
       { _id: new ObjectId(toolId) },
       { $push: { comments: { userId: userId, commentAndRating, timeOfComment: commentTime, reviews: [] } } },
@@ -279,20 +277,15 @@ app.post("/add-comment/:toolId", async (req, res) => {
       return res.status(404).json({ message: "Tool not found" });
     }
     res.send(tool);
-    // res.status(201).json(tool.value);
   } catch (error) {
-    console.log(error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
-
-
 // Review for a particular comment
 app.post("/add-review/:toolId", async (req, res) => {
   try {
     const { toolId } = req.params;
-    const { repliedCommentId, reviewerName, reviewerComment } = req.body;
-    const reviewTime = getCurrentDateTime();
+    const { repliedCommentId, reviewerName, reviewerComment, reviewTime } = req.body;
     const tool = await userCollection.findOneAndUpdate(
       { 
         _id: new ObjectId(toolId),
@@ -314,11 +307,6 @@ app.post("/add-review/:toolId", async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
-
-
-
-
-
 
 app.listen(port, () => {
   console.log(`Task app listening on ${port}`);
