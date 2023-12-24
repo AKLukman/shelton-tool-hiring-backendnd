@@ -37,6 +37,7 @@ connectWithRetry();
 
 const userCollection = client.db("test").collection("users");
 const placedProducts = client.db("test").collection("userAndProducts");
+const authentication = client.db("test").collection("authentication");
 async function run() {
   try {
     await client.connect();clearImmediate
@@ -306,6 +307,25 @@ app.post("/add-review/:toolId", async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
   }
+});
+
+// Shelton user authentication
+app.post("/signup", async (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  const user = req.body;
+  const result = await authentication.insertOne(user);
+  res.send(result);
+});
+
+app.get("/loggedin-users", async (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  const query = {};
+  const result = await authentication.find(query).toArray();
+  res.send(result);
 });
 
 app.listen(port, () => {
