@@ -282,6 +282,36 @@ app.post("/add-comment/:toolId", async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+// Comment deleted by admin
+app.delete("/delete-comment/:toolId/:commentId", async (req, res) => {
+  try {
+    const { toolId, commentId } = req.params;
+    const tool = await userCollection.findOneAndUpdate(
+      {
+        _id: new ObjectId(toolId),
+        "comments.userId": parseInt(commentId) // Match comment by its custom commentId
+      },
+      {
+        $pull: {
+          comments: { userId: parseInt(commentId) } // Remove the matched comment
+        }
+      },
+      { returnOriginal: false }
+    );
+
+    if (!tool) {
+      return res.status(404).json({ message: "Tool or comment not found" });
+    }
+
+    res.send(tool);
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+
+
+
 // Review for a particular comment
 app.post("/add-review/:toolId", async (req, res) => {
   try {
@@ -298,6 +328,37 @@ app.post("/add-review/:toolId", async (req, res) => {
         }
       },
       { returnOriginal: false }
+    );
+
+    if (!tool) {
+      return res.status(404).json({ message: "Tool or comment not found" });
+    }
+    res.send(tool);
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Delete review by admin
+app.post("/delete-review/:toolId/:commentId", async (req, res) => {
+  try {
+    const { toolId, commentId } = req.params;
+    const {reviewDataToDelete} = req.body;
+console.log(req.body);
+    const tool = await userCollection.findOneAndUpdate(
+      {
+        _id: new ObjectId(toolId),
+        "comments.userId": parseInt(commentId)
+      },
+      {
+        $pull: {
+          "comments.$[outer].reviews": {reviewerComment: reviewDataToDelete}
+        }
+      },
+      {
+        arrayFilters: [{ "outer.userId": parseInt(commentId) }],
+        returnOriginal: false
+      }
     );
 
     if (!tool) {
